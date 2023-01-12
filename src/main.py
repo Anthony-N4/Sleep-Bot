@@ -9,7 +9,7 @@ load_dotenv()
 
 TOKEN = os.getenv("DISCORD_TOKEN")
 GUILD = os.getenv("GUILD_ID")
-bot = commands.Bot(activity = discord.Activity(type = discord.ActivityType.watching, name = "ou not sleep"), status = discord.Status.online)
+bot = commands.Bot(activity = discord.Activity(type = discord.ActivityType.watching, name = "you not sleep"), status = discord.Status.online)
 
 @bot.slash_command(name = "log-hours", description = "Logs when you start and stop sleeping", guild_ids = [GUILD])
 async def log_data(ctx, start: Option(str, description = "When did you start sleeping?", require = True), end: Option(str, description = "When did you wake up?")):
