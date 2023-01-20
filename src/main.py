@@ -80,7 +80,7 @@ async def log_data(ctx,
                    end: Option(str, description = "When did you wake up?")):
     try:
         await ctx.respond(
-            f'Hours recorded. {execute_time_routine(start, end)}.Nice!')
+            f'Hours recorded. {execute_time_routine(start, end)}. Nice!')
     except TypeError:
         await ctx.respond("You're a walking bruh moment.")
     except ValueError:
