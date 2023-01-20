@@ -54,6 +54,10 @@ def timeSlept(starting_time, ending_time) -> int:
         totalHours = abs(endHour - startHour)
         totalMinutes = endMin - startMin
 
+    elif endMin == startMin:
+        totalHours = abs(endHour - startHour) 
+        totalMinutes = 0
+
     else:
         totalHours = abs(endHour - startHour)
         totalMinutes = (60 + endMin) - startMin
