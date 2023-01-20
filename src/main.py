@@ -48,37 +48,17 @@ def timeSlept(starting_time, ending_time) -> int:
     elif "AM" in endMin_String and endHour == 12:
         #If the time is 12:00AM, in 24 hr format, time is 0:00
         endHour = 0
-
-    #Calculates time passed
-    #If startHour is PM and endHour is AM
-    if startHour > 12 and endHour < 12:
-        totalHours = ((24 - startHour) + endHour) - 1
-        totalMins = (60 - startMin) + endMin
     
-    #Sleep is shorter than 1 hour
-    elif startHour == endHour:
-        totalHours = 0
-        totalMins = endMin - startMin
+    #Calculates elapsed time
+    if endMin > startMin:
+        totalHours = abs(endHour - startHour)
+        totalMinutes = endMin - startMin
 
-    #If both times are PM and sleep atleast 12 hours
-    elif ((startHour and endHour > 12) and startHour > endHour):
-        totalHours = ((24 - startHour) + endHour) -1
-        totalMins = (60 - startMin) + endMin
-
-    #If both times are AM and sleep atleast 12 hours
-    elif ((startHour and endHour < 12) and startHour > endHour):
-        totalHours = ((24 - startHour) + endHour) -1
-        totalMins = (60 - startMin) + endMin
-   
     else:
-        totalHours = (endHour - startHour) - 1
-        totalMins = (60 - startMin) + endMin  
-    
-    if totalMins == 60:
-        totalHours = totalHours + 1
-        totalMins = 0
- 
-    return str(totalHours) + " hours and " + str(totalMins) + " minutes"
+        totalHours = abs(endHour - startHour)
+        totalMinutes = (60 + endMin) - startMin
+
+    return str(totalHours) + " hours and " + str(totalMinutes) + " minutes"
 
 @bot.slash_command(name = "log-hours", description = "Logs when you start and stop sleeping", guild_ids = [GUILD])
 async def log_data(ctx, start: Option(str, description = "When did you start sleeping?", require = True), end: Option(str, description = "When did you wake up?")):
