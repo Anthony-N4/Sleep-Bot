@@ -110,7 +110,7 @@ async def log_data(ctx,
                    start: Option(str, description = "When did you start sleeping?", require = True),
                    end: Option(str, description = "When did you wake up?")):
     try:
-        retrieve_messages(CHANNEL)
+        retrieve_user_id(CHANNEL)
         await ctx.respond(
             f'Hours recorded. {execute_time_routine(start, end)}')
     except ValueError:
