@@ -1,90 +1,104 @@
 import discord, asyncio
 import os
+from collections import namedtuple
 from dotenv import load_dotenv
 from discord import Option
 from discord.ext import commands
+
 
 load_dotenv()
 
 TOKEN = os.getenv("DISCORD_TOKEN")
 GUILD = os.getenv("GUILD_ID")
-bot = commands.Bot(activity = discord.Activity(type = discord.ActivityType.watching, name = "you not sleep ._."), status = discord.Status.online)
+bot = commands.Bot(
+    activity = discord.Activity(type = discord.ActivityType.watching, name = "you not sleep ._."),
+    status = discord.Status.online)
 
-#Ugliest method, goal: get it working
-def timeSlept(starting_time, ending_time) -> int:
-    """Calculates the total amount of time user slept
-    
-    Args: 
-        starting_time(str), ending_time(str): starting and ending timestamps
+Time = namedtuple('Time', ['hour', 'minutes', 'indicator'])
 
-    Returns:
-       int: Converted to str, how much time has passed between timestamps 
-    """
-    #Uppercase the AM and PM in user input
-    starting_time = starting_time.upper()
-    ending_time = ending_time.upper()
+def parse_time(time_str: str) -> Time:
+    """Parses a 12-hour time into the hour, minutes, and PM/AM.
+    This assumes user puts a : between hour and minutes and has 'PM' or 'AM' at the end."""
 
-    #Splits the hours from the minutes
-    startHour_String = starting_time.split(':')[0]
-    startMin_String = starting_time.split(':')[-1]
-    endHour_String = ending_time.split(':')[0]
-    endMin_String = ending_time.split(':')[-1]
+    if time_str.startswith('-'):
+        raise ValueError
 
-    #Converts the hours and minutes into integers
-    startHour = int(startHour_String)
-    startMin = int(startMin_String[:-2])
-    endHour = int(endHour_String)
-    endMin = int(endMin_String[:-2])
+    time_str = time_str.replace(' ', '')
+    hour = int(time_str.split(':')[0])
+    minute = int(time_str.split(':')[1][:-2])
 
-    #Converts the time into 24 hr format
-    if "PM" in startMin_String and startHour >= 1 and startHour < 12:
-        startHour = startHour + 12
-    elif "AM" in startMin_String and startHour == 12:
-        #If the time is 12:00AM, in 24 hr format, time is 0:00
-        startHour = 0
-        
-    if "PM" in endMin_String and endHour >= 1 and endHour < 12:
-        endHour = endHour + 12
-    elif "AM" in endMin_String and endHour == 12:
-        #If the time is 12:00AM, in 24 hr format, time is 0:00
-        endHour = 0
-    
-    #Calculates elapsed time
-    #If the starting hour is greater than the ending hour in terms of 24 hour time format
-    if startHour > endHour:
-        totalHours = (24 - abs(endHour - startHour))
-        if endMin > startMin:
-            totalMinutes = endMin - startMin
-        elif endMin == startMin:
-            totalMinutes = 0
-        else:
-            totalMinutes = (60 + endMin) - startMin
+    return Time(hour, minute, time_str.split(':')[1][-2:])
 
-    elif endMin > startMin:
-        totalHours = abs(endHour - startHour)
-        totalMinutes = endMin - startMin
+def convert_to_24_hour(starting_time: Time, ending_time: Time) -> tuple[Time, Time]:
+    """Converts to 24-hour time"""
 
-    elif endMin == startMin:
-        totalHours = abs(endHour - startHour) 
-        totalMinutes = 0
+    if starting_time.indicator.upper() == 'PM':
+        starting_time = Time(starting_time.hour + 12, starting_time.minutes, '24')
 
+    if ending_time.indicator.upper() == 'PM':
+        ending_time = Time(ending_time.hour + 12, ending_time.minutes, '24')
+
+    return starting_time, ending_time
+
+def find_time_slept(times: tuple[Time, Time]) -> tuple[int, int]:
+    """Finds the amount of time slept in hours and minutes."""
+    start, end = times
+
+    # Assumes slept from one day to next
+    if start.hour > end.hour:
+        total_hours = 24 - start.hour + end.hour
     else:
-        totalHours = abs(endHour - startHour)
-        totalMinutes = (60 + endMin) - startMin
+        total_hours = end.hour - start.hour
 
-    return str(totalHours) + " hours and " + str(totalMinutes) + " minutes"
+    if end.minutes >= start.minutes:
+        total_minutes = end.minutes - start.minutes
+    else:
+        total_minutes = 60 + end.minutes - start.minutes
 
-@bot.slash_command(name = "log-hours", description = "Logs when you start and stop sleeping", guild_ids = [GUILD])
-async def log_data(ctx, start: Option(str, description = "When did you start sleeping?", require = True), end: Option(str, description = "When did you wake up?")):
+    return total_hours, total_minutes
 
-    await ctx.respond(f"Hours recorded. You slept from {start} to {end}, a total of " + timeSlept(start, end) + "." " Nice!")
 
-@bot.slash_command(name = "weekly-average", description = "Returns the average amount of sleep you got this week", guild_ids = [GUILD])
+def find_time_slept_str(time_slept: tuple[int, int]):
+    time_string = 'You slept for'
+
+    if time_slept[0] != 0:
+        time_string += f' {time_slept[0]} hour(s)'
+    if time_slept[1] != 0:
+        time_string += f' {time_slept[1]} minute(s)'
+
+    return time_string
+
+def execute_time_routine(start_str: str, end_str: str) -> str:
+    return find_time_slept_str(
+        find_time_slept(convert_to_24_hour(parse_time(start_str), parse_time(end_str))))
+
+
+@bot.slash_command(name = "log-hours", description = "Logs when you start and stop sleeping",
+                   guild_ids = [GUILD])
+async def log_data(ctx,
+                   start: Option(str, description = "When did you start sleeping?", require = True),
+                   end: Option(str, description = "When did you wake up?")):
+    try:
+        await ctx.respond(
+            f'Hours recorded. {execute_time_routine(start, end)}.Nice!')
+    except TypeError:
+        await ctx.respond("You're a walking bruh moment.")
+    except ValueError:
+        await ctx.respond("You're a walking bruh moment times two.")
+
+
+@bot.slash_command(name = "weekly-average",
+                   description = "Returns the average amount of sleep you got this week",
+                   guild_ids = [GUILD])
 async def log_data(ctx):
     await ctx.respond("Test")
 
-@bot.slash_command(name = "graph", description = "Returns a graph of how much sleep you got this month", guild_ids = [GUILD])
+
+@bot.slash_command(name = "graph",
+                   description = "Returns a graph of how much sleep you got this month",
+                   guild_ids = [GUILD])
 async def log_data(ctx):
     await ctx.respond("Test")
- 
+
+
 bot.run(TOKEN)
