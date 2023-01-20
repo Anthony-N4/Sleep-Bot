@@ -59,12 +59,23 @@ def find_time_slept(times: tuple[Time, Time]) -> tuple[int, int]:
 
 
 def find_time_slept_str(time_slept: tuple[int, int]):
+    hours, minutes = time_slept
     time_string = 'You slept for'
 
-    if time_slept[0] != 0:
-        time_string += f' {time_slept[0]} hour(s)'
-    if time_slept[1] != 0:
-        time_string += f' {time_slept[1]} minute(s)'
+    if hours == 0 and minutes == 0:
+        return 'Take some melatonin gummies'
+
+    if hours != 0:
+        time_string += f' {hours} hour(s)'
+
+    if minutes != 0:
+        time_string += f' {minutes} minute(s)'
+    
+    if hours < 3:
+        time_string += '. Yikes ... :grimacing:'
+    
+    else:
+        time_string += ". Nice! <:jac1:773612390604210227><:jac2:773612349957341204><:jac3:773612364096340029>"
 
     return time_string
 
@@ -80,9 +91,7 @@ async def log_data(ctx,
                    end: Option(str, description = "When did you wake up?")):
     try:
         await ctx.respond(
-            f'Hours recorded. {execute_time_routine(start, end)}. Nice!')
-    except TypeError:
-        await ctx.respond("You're a walking bruh moment.")
+            f'Hours recorded. {execute_time_routine(start, end)}')
     except ValueError:
         await ctx.respond("You're a walking bruh moment times two.")
 
