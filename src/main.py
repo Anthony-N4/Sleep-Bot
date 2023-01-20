@@ -1,5 +1,7 @@
 import discord, asyncio
 import os
+import requests
+import json
 from collections import namedtuple
 from dotenv import load_dotenv
 from discord import Option
@@ -10,6 +12,10 @@ load_dotenv()
 
 TOKEN = os.getenv("DISCORD_TOKEN")
 GUILD = os.getenv("GUILD_ID")
+CHANNEL = os.getenv("CHANNEL_ID")
+AUTH = os.getenv("AUTHORIZATION")
+REQUEST = os.getenv("REQUETS_URL")
+
 bot = commands.Bot(
     activity = discord.Activity(type = discord.ActivityType.watching, name = "you not sleep ._."),
     status = discord.Status.online)
@@ -83,6 +89,20 @@ def execute_time_routine(start_str: str, end_str: str) -> str:
     return find_time_slept_str(
         find_time_slept(convert_to_24_hour(parse_time(start_str), parse_time(end_str))))
 
+def retrieve_user_id(CHANNEL: int) -> int:
+    """Scrapes user_id of user who called slash command"""
+    headers = {
+        'authorization': AUTH
+    }
+    r = requests.get(f'https://discord.com/api/v9/channels/{CHANNEL}/messages?limit=1', headers = headers)
+    json_object = json.loads(r.text)
+
+    #Looks at JSON data from most recent message sent in CHANNEL
+    #Loops through JSON data, looks for nested keys 'interaction' -> 'user' -> 'id'
+    #Returns user_id of person who called slash command
+    for value in json_object:
+        user_id = int(value['interaction']['user']['id'])
+    return user_id
 
 @bot.slash_command(name = "log-hours", description = "Logs when you start and stop sleeping",
                    guild_ids = [GUILD])
@@ -90,6 +110,7 @@ async def log_data(ctx,
                    start: Option(str, description = "When did you start sleeping?", require = True),
                    end: Option(str, description = "When did you wake up?")):
     try:
+        retrieve_messages(CHANNEL)
         await ctx.respond(
             f'Hours recorded. {execute_time_routine(start, end)}')
     except ValueError:
