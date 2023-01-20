@@ -50,7 +50,17 @@ def timeSlept(starting_time, ending_time) -> int:
         endHour = 0
     
     #Calculates elapsed time
-    if endMin > startMin:
+    #If the starting hour is greater than the ending hour in terms of 24 hour time format
+    if startHour > endHour:
+        totalHours = (24 - abs(endHour - startHour))
+        if endMin > startMin:
+            totalMinutes = endMin - startMin
+        elif endMin == startMin:
+            totalMinutes = 0
+        else:
+            totalMinutes = (60 + endMin) - startMin
+
+    elif endMin > startMin:
         totalHours = abs(endHour - startHour)
         totalMinutes = endMin - startMin
 
