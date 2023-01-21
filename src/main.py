@@ -107,16 +107,16 @@ def retrieve_messages(CHANNEL) -> int:
     #Returns userid of person who called slash command
     for value in json_object:
         print(value['interaction']['user']['id'])
-    #['interaction']['user']['id']
+
 @bot.slash_command(name = "log-hours", description = "Logs when you start and stop sleeping",
                    guild_ids = [GUILD])
 async def log_data(ctx,
                    start: Option(str, description = "When did you start sleeping?", require = True),
                    end: Option(str, description = "When did you wake up?")):
     try:
-        #retrieve_messages(CHANNEL)
         await ctx.respond(
             f'{start} - {end}. {execute_time_routine(start, end)}')
+        retrieve_messages(CHANNEL)
     except ValueError:
         await ctx.respond("You're a walking bruh moment times two.")
 
