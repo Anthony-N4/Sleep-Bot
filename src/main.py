@@ -38,11 +38,17 @@ def parse_time(time_str: str) -> Time:
 def convert_to_24_hour(starting_time: Time, ending_time: Time) -> tuple[Time, Time]:
     """Converts to 24-hour time"""
 
-    if starting_time.indicator.upper() == 'PM':
+    if starting_time.indicator.upper() == 'PM' and starting_time[0] != 12:
         starting_time = Time(starting_time.hour + 12, starting_time.minutes, '24')
 
-    if ending_time.indicator.upper() == 'PM':
+    if ending_time.indicator.upper() == 'PM' and ending_time[0] != 12:
         ending_time = Time(ending_time.hour + 12, ending_time.minutes, '24')
+
+    if starting_time.indicator.upper() == 'AM' and starting_time[0] == 12:
+        starting_time = Time(starting_time.hour - 12, starting_time.minutes, '24')
+    
+    if ending_time.indicator.upper() == 'AM' and ending_time[0] == 12:
+        ending_time = Time(ending_time.hour - 12, ending_time.minutes, '24')
 
     return starting_time, ending_time
 
@@ -60,6 +66,7 @@ def find_time_slept(times: tuple[Time, Time]) -> tuple[int, int]:
         total_minutes = end.minutes - start.minutes
     else:
         total_minutes = 60 + end.minutes - start.minutes
+        total_hours = total_hours - 1  
 
     return total_hours, total_minutes
 
@@ -89,30 +96,27 @@ def execute_time_routine(start_str: str, end_str: str) -> str:
     return find_time_slept_str(
         find_time_slept(convert_to_24_hour(parse_time(start_str), parse_time(end_str))))
 
-def retrieve_user_id(CHANNEL: int) -> int:
-    """Scrapes user_id of user who called slash command"""
+def retrieve_messages(CHANNEL) -> int:
     headers = {
         'authorization': AUTH
     }
     r = requests.get(f'https://discord.com/api/v9/channels/{CHANNEL}/messages?limit=1', headers = headers)
     json_object = json.loads(r.text)
-
     #Looks at JSON data from most recent message sent in CHANNEL
     #Loops through JSON data, looks for nested keys 'interaction' -> 'user' -> 'id'
-    #Returns user_id of person who called slash command
+    #Returns userid of person who called slash command
     for value in json_object:
-        user_id = int(value['interaction']['user']['id'])
-    return user_id
-
+        print(value['interaction']['user']['id'])
+    #['interaction']['user']['id']
 @bot.slash_command(name = "log-hours", description = "Logs when you start and stop sleeping",
                    guild_ids = [GUILD])
 async def log_data(ctx,
                    start: Option(str, description = "When did you start sleeping?", require = True),
                    end: Option(str, description = "When did you wake up?")):
     try:
-        retrieve_user_id(CHANNEL)
+        #retrieve_messages(CHANNEL)
         await ctx.respond(
-            f'Hours recorded. {execute_time_routine(start, end)}')
+            f'{start} - {end}. {execute_time_routine(start, end)}')
     except ValueError:
         await ctx.respond("You're a walking bruh moment times two.")
 
